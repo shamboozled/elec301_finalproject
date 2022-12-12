@@ -89,31 +89,31 @@ plt.show()
 
 #####################################################################
 
-# # LOAD MODEL
-# model = tf.keras.models.load_model("model_v7.h5")
-# model.summary()
+# LOAD MODEL
+model = tf.keras.models.load_model("model_v7.h5")
+model.summary()
 
-# ## MAKE PREDICTIONS
-# shape = specgram(Q[0], 0)[0].shape
-# temp = np.empty((315, shape[0], shape[1], shape[2]))
+## MAKE PREDICTIONS
+shape = specgram(Q[0], 0)[0].shape
+temp = np.empty((315, shape[0], shape[1], shape[2]))
 
-# for i in range(315):
-#     temp[i] = specgram(Q[i], 0)[0]
+for i in range(315):
+    temp[i] = specgram(Q[i], 0)[0]
 
-# yhat = model.predict(temp)
-# results = np.argmax(yhat, axis=1)
+yhat = model.predict(temp)
+results = np.argmax(yhat, axis=1)
 
-# ## FORMAT AND SAVE RESULTS AS CSV
-# test_wav = os.listdir("test")
+## FORMAT AND SAVE RESULTS AS CSV
+test_wav = os.listdir("test")
 
-# labels_dict = {0:"neutral", 1:"calm", 2:"happy", 3:"sad", 4:"angry", 5:"fearful", 6:"disgust", 7:"surprise"}
-# results_label = [labels_dict[results[idx]] for idx in range(len(results))]
+labels_dict = {0:"neutral", 1:"calm", 2:"happy", 3:"sad", 4:"angry", 5:"fearful", 6:"disgust", 7:"surprise"}
+results_label = [labels_dict[results[idx]] for idx in range(len(results))]
 
-# filenames = [test_wav[idx][:-4] for idx in range(len(test_wav))]
+filenames = [test_wav[idx][:-4] for idx in range(len(test_wav))]
 
-# submission_array = np.empty((len(filenames), 2), dtype=object)
-# submission_array[:, 0] = filenames
-# submission_array[:, 1] = results_label
+submission_array = np.empty((len(filenames), 2), dtype=object)
+submission_array[:, 0] = filenames
+submission_array[:, 1] = results_label
 
-# df = pd.DataFrame(submission_array)
-# df.to_csv('spectrogram_CNN_v7.csv', index=False, header=['filename', 'label'])
+df = pd.DataFrame(submission_array)
+df.to_csv('spectrogram_CNN_v7.csv', index=False, header=['filename', 'label'])

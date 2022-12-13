@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import tensorflow as tf 
 import tensorflow_io as tfio
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Activation, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, Activation, MaxPooling2D, Dropout, Input, Resizing
 import pickle
 import numpy as np
 import pandas as pd
@@ -25,14 +25,15 @@ labeled_data = tf.data.Dataset.from_tensor_slices((X, y))
 
 ## SPECTROGRAM OF A SIGNAL
 def specgram(signal, label):
-    spectrogram = tf.signal.stft(signal, frame_length=256, frame_step=128)
+    spectrogram = tf.signal.stft(signal, frame_length=255, frame_step=128)
     spectrogram = tf.abs(spectrogram)
     spectrogram = tf.expand_dims(spectrogram, axis=2)
+    spectrogram = spectrogram[100:400]
     return spectrogram, label
 
 # signal, label = labeled_data.shuffle(buffer_size=1000).as_numpy_iterator().next()
 # spectrogram, label = specgram(signal, label)
-# plt.figure(figsize=(30,20))
+# plt.figure()
 # plt.imshow(tf.transpose(spectrogram)[0])
 # plt.show()
 
@@ -40,22 +41,22 @@ def specgram(signal, label):
 specgram_data = labeled_data.map(specgram)
 specgram_data = specgram_data.cache()
 specgram_data = specgram_data.shuffle(buffer_size=1000)
-specgram_data = specgram_data.batch(16)
+specgram_data = specgram_data.batch(1)
 specgram_data = specgram_data.prefetch(8)
-print(len(specgram_data)) # length of data is 70
 
 ## SPLIT INTO TRAIN AND TEST SETS
-train_size = int(len(specgram_data) * 0.5)
-valid_size = len(specgram_data) - train_size
-train = specgram_data.take(train_size)
-valid = specgram_data.skip(train_size).take(valid_size)
+train = specgram_data.take(896)
+valid = specgram_data.skip(896).take(112)
+test = specgram_data.skip(1008).take(112)
+# print(len(test))
 
 ## CREATE MODEL
 model = Sequential()
-model.add(Conv2D(8, (5, 5), strides=3, input_shape=(657, 129, 1)))
+model.add(Input(shape=(300, 129, 1)))
+model.add(Conv2D(8, 3, strides=2))
 model.add(Activation('relu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(0.25))
 
 model.add(Flatten())
 model.add(Dropout(0.5))
@@ -64,8 +65,7 @@ model.add(Activation('softmax'))
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-    metrics=["accuracy"],
-    run_eagerly=True)
+    metrics=["accuracy"])
 
 model.summary()
 
@@ -73,7 +73,7 @@ model.summary()
 hist = model.fit(train, epochs=20, verbose=1, validation_data=valid)
 
 ## SAVE MODEL
-model.save("model_v7.h5")
+model.save("model_v10.h5")
 
 ## PLOT LOSS
 plt.subplot(211)
@@ -89,9 +89,12 @@ plt.show()
 
 #####################################################################
 
-# LOAD MODEL
-model = tf.keras.models.load_model("model_v7.h5")
+## LOAD MODEL
+model = tf.keras.models.load_model("model_v10.h5")
 model.summary()
+
+## PREDICT TEST DATA
+print(model.evaluate(test))
 
 ## MAKE PREDICTIONS
 shape = specgram(Q[0], 0)[0].shape
@@ -116,4 +119,4 @@ submission_array[:, 0] = filenames
 submission_array[:, 1] = results_label
 
 df = pd.DataFrame(submission_array)
-df.to_csv('spectrogram_CNN_v7.csv', index=False, header=['filename', 'label'])
+df.to_csv('spectrogram_CNN_v10.csv', index=False, header=['filename', 'label'])

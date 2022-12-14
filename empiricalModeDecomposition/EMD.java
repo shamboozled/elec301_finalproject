@@ -1,3 +1,5 @@
+// credit to: https://stackoverflow.com/questions/10230106/is-there-some-empirical-mode-decomposition-library-in-java
+
 import java.util.Arrays;
 
 public class EMD {
